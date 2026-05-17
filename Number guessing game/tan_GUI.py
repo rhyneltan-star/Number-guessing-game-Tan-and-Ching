@@ -7,11 +7,18 @@ root.title("Mystery Number Quest")
 root.geometry("700x550")
 root.config(bg="#0f0f0f")
 
+try:
+    icon = PhotoImage(file="domo.ppm")
+    root.iconphoto(True, icon)
+except Exception as e:
+    print(f"Icon error: {e}")
+
 # ================= GAME DATA ================= #
 max_number = 10
 secret_number = 0
 lives = 5
 score = 10
+hints = 5
 
 wrong_messages = [
     "🤖 Wrong guess!",
@@ -22,21 +29,22 @@ wrong_messages = [
 
 win_messages = [
     "🏆 Mission Complete!",
-    "🎉 You cracked the code!",
     "🚀 Victory!"
 ]
 
 # ================= START GAME ================= #
 def start_game():
-    global secret_number, lives, score
+    global secret_number, lives, score, hints
 
     secret_number = random.randint(1, max_number)
 
     lives = 5
     score = 10
+    hints = 5
 
     lives_label.config(text=f"❤️ Lives: {lives}")
     score_label.config(text=f"⭐ Score: {score}/10")
+    hint_label.config(text=f"💡 Hints: {hints}")
 
     result.config(text="🎮 Game Started!", fg="white")
 
@@ -44,6 +52,34 @@ def start_game():
 
     guess_entry.config(state=NORMAL)
     check_btn.config(state=NORMAL)
+    hint_btn.config(state=NORMAL)
+
+# ================= HINT ================= #
+def show_hint():
+    global hints
+
+    if hints <= 0:
+        result.config(text="❌ No hints left!", fg="red")
+        hint_btn.config(state=DISABLED)
+        return
+
+    hints -= 1
+
+    hint_label.config(text=f"💡 Hints: {hints}")
+
+    hint_list = [
+        "Hint: EVEN number" if secret_number % 2 == 0 else "Hint: ODD number",
+        "Hint: Higher half" if secret_number > 5 else "Hint: Lower half"
+    ]
+
+    if secret_number in [2, 3, 5, 7]:
+        hint_list.append("Hint: PRIME number")
+
+    result.config(text=random.choice(hint_list), fg="#00ffff")
+
+    # Disable hint button if no hints left
+    if hints <= 0:
+        hint_btn.config(state=DISABLED)
 
 # ================= CHECK GUESS ================= #
 def check_guess():
@@ -51,14 +87,12 @@ def check_guess():
 
     guess = guess_entry.get()
 
-    # Check if input is a number
     if not guess.isdigit():
         result.config(text="⚠️ Enter numbers only!", fg="yellow")
         return
 
     guess = int(guess)
 
-    # Check valid range
     if guess < 1 or guess > max_number:
         result.config(text="Please enter numbers 1-10 only!", fg="orange")
         return
@@ -73,6 +107,7 @@ def check_guess():
 
         guess_entry.config(state=DISABLED)
         check_btn.config(state=DISABLED)
+        hint_btn.config(state=DISABLED)
 
     # ===== WRONG ===== #
     else:
@@ -98,9 +133,7 @@ def check_guess():
             "#2d132c"
         ]))
 
-        # Game Over
         if lives <= 0:
-
             result.config(
                 text=f"💀 Game Over!\nNumber was {secret_number}",
                 fg="red"
@@ -108,23 +141,21 @@ def check_guess():
 
             guess_entry.config(state=DISABLED)
             check_btn.config(state=DISABLED)
+            hint_btn.config(state=DISABLED)
 
     guess_entry.delete(0, END)
 
 # ================= RESTART ================= #
 def restart_game():
-
     root.config(bg="#0f0f0f")
 
-    result.config(
-        text="🎮 Click Start Game",
-        fg="white"
-    )
+    result.config(text="🎮 Click Start Game", fg="white")
 
     guess_entry.delete(0, END)
 
     guess_entry.config(state=DISABLED)
     check_btn.config(state=DISABLED)
+    hint_btn.config(state=DISABLED)
 
 # ================= TITLE ================= #
 Label(
@@ -135,7 +166,6 @@ Label(
     fg="#00ff00"
 ).pack(pady=20)
 
-# ================= START BUTTON ================= #
 Button(
     root,
     text="Start Game",
@@ -146,21 +176,14 @@ Button(
 ).pack()
 
 # ================= LABELS ================= #
-lives_label = Label(
-    root,
-    text="❤️ Lives: 5",
-    bg="#0f0f0f",
-    fg="#ff4d4d"
-)
+lives_label = Label(root, text="❤️ Lives: 5", bg="#0f0f0f", fg="#ff4d4d")
 lives_label.pack()
 
-score_label = Label(
-    root,
-    text="⭐ Score: 10/10",
-    bg="#0f0f0f",
-    fg="#ffd700"
-)
+score_label = Label(root, text="⭐ Score: 10/10", bg="#0f0f0f", fg="#ffd700")
 score_label.pack()
+
+hint_label = Label(root, text="💡 Hints: 5", bg="#0f0f0f", fg="#00ffff")
+hint_label.pack()
 
 # ================= ENTRY ================= #
 guess_entry = Entry(
@@ -190,6 +213,17 @@ check_btn = Button(
 )
 check_btn.grid(row=0, column=0, padx=5)
 
+hint_btn = Button(
+    buttons,
+    text="Hint",
+    command=show_hint,
+    state=DISABLED,
+    bg="#9933ff",
+    fg="white",
+    width=12
+)
+hint_btn.grid(row=0, column=1, padx=5)
+
 Button(
     buttons,
     text="Restart",
@@ -197,7 +231,7 @@ Button(
     bg="#00aa66",
     fg="white",
     width=12
-).grid(row=0, column=1, padx=5)
+).grid(row=0, column=2, padx=5)
 
 # ================= RESULT ================= #
 result = Label(
@@ -209,5 +243,4 @@ result = Label(
 )
 result.pack(pady=40)
 
-# ================= MAIN LOOP ================= #
 root.mainloop()
